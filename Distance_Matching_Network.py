@@ -43,7 +43,7 @@ class DMN(nn.Module):
         super().__init__()
         self.subnet1 = self.subnet2 = DMNSubnet(dataInLength, dropout)
     def forward(self, dataSource, dataTarget):
-        return 1-torch.mean(nn.CosineSimilarity(dim=2)(self.subnet1(dataSource), self.subnet2(dataSource)))
+        return 1-torch.mean(nn.CosineSimilarity(dim=2)(self.subnet1(dataSource), self.subnet2(dataTarget)))
 
 
 if __name__ == '__main__':
