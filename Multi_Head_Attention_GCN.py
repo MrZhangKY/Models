@@ -68,16 +68,18 @@ class GraphConvolution(nn.Module):
 
 
 class MHAGCN(nn.Module):
-    def __init__(self, dataInLength, dataHiddenLength, dataOutLength, dropout=0.5):
+    def __init__(self, dataInLength, dataHiddenLength, dataOutLength, dataChannelNum, dropout=0.5):
         super().__init__()
         self.multiheadAttention_Layer = multiheadAttentionLayer(dataInLength, dataHiddenLength)
         self.first_layer = GraphConvolution(dataInLength, dataHiddenLength, dropout)
+        self.batchNormLayer1 = nn.BatchNorm1d(dataChannelNum)
         self.second_layer = GraphConvolution(dataHiddenLength, dataOutLength, 0)
+        self.batchNormLayer2 = nn.BatchNorm1d(dataChannelNum)
         self.relu = nn.PReLU()
     def forward(self, dataIn):
         attentionMatrix = self.multiheadAttention_Layer(dataIn)
-        dataIn = self.relu(self.first_layer(dataIn, attentionMatrix))
-        dataOut = self.second_layer(dataIn, attentionMatrix)
+        dataMiddle = self.batchNormLayer1(self.relu(self.first_layer(dataIn, attentionMatrix)))
+        dataOut = self.batchNormLayer2(self.second_layer(dataMiddle, attentionMatrix))
         return dataOut
   
 
@@ -99,7 +101,7 @@ if __name__ == '__main__':
     
     '''3-test for GraphConvolution'''
     dataIn = torch.randn(10, 6, 2048)
-    multiheadGNN = MHAGCN(2048, 1000, 500)
+    multiheadGNN = MHAGCN(2048, 1000, 500, 6)
     print(multiheadGNN(dataIn))
     print(multiheadGNN(dataIn).shape)
     print(multiheadGNN)
