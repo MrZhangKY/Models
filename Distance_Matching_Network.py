@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 
 
-def myConv1d(kernel_size):
-    return nn.Sequential(nn.Conv1d(1, 1, kernel_size), nn.Linear(1000-kernel_size+1, 100), nn.PReLU())
+def myConv1d(input_channel, kernel_size):
+    return nn.Sequential(nn.Conv1d(input_channel, 1, kernel_size), nn.Linear(1000-kernel_size+1, 100), nn.PReLU())
 
 
 class DMNSubnet(nn.Module):
-    def __init__(self, dataInLength, dropout=0.5):
+    def __init__(self, dataInChannel, dataInLength, dropout=0.5):
         super().__init__()
         self.Layer1 = nn.Sequential(
             nn.Linear(dataInLength, 2000),
@@ -16,11 +16,11 @@ class DMNSubnet(nn.Module):
             nn.PReLU(),
             nn.Dropout(dropout)
         )
-        self.Layer2_1 = myConv1d(8)
-        self.Layer2_2 = myConv1d(16)
-        self.Layer2_3 = myConv1d(32)
-        self.Layer2_4 = myConv1d(64)
-        self.Layer2_5 = myConv1d(128)
+        self.Layer2_1 = myConv1d(dataInChannel, 8)
+        self.Layer2_2 = myConv1d(dataInChannel, 16)
+        self.Layer2_3 = myConv1d(dataInChannel, 32)
+        self.Layer2_4 = myConv1d(dataInChannel, 64)
+        self.Layer2_5 = myConv1d(dataInChannel, 128)
         self.Layer3 = nn.Sequential(nn.Conv1d(5, 1, 1), nn.PReLU(), nn.Dropout(dropout))
         self.Layer4 = nn.Sequential(nn.Linear(100, 50), nn.PReLU())
         self.Layer5 = nn.Sequential(nn.Linear(50, 10), nn.PReLU())
@@ -39,20 +39,20 @@ class DMNSubnet(nn.Module):
 
 
 class DMN(nn.Module):
-    def __init__(self, dataInLength, dropout=0.5):
+    def __init__(self, dataInChannel, dataInLength, dropout=0.5):
         super().__init__()
-        self.subnet1 = self.subnet2 = DMNSubnet(dataInLength, dropout)
+        self.subnet1 = self.subnet2 = DMNSubnet(dataInChannel, dataInLength, dropout)
     def forward(self, dataSource, dataTarget):
         return 1-torch.mean(nn.CosineSimilarity(dim=2)(self.subnet1(dataSource), self.subnet2(dataTarget)))
 
 
 if __name__ == '__main__':
     '''V1-test for DMNSubnet'''
-    dataSource = torch.randn(10, 1, 500)
-    DMNSubnet1 = DMNSubnet(500)
+    dataSource = torch.randn(10, 6, 500)
+    DMNSubnet1 = DMNSubnet(6, 500)
     print(DMNSubnet1(dataSource).shape)
     '''V2-test for DMN'''
-    DMN1 = DMN(500)
-    dataTarget = torch.randn(10, 1, 500)
+    DMN1 = DMN(6, 500)
+    dataTarget = torch.randn(10, 6, 500)
     print(DMN1(dataSource, dataTarget))
 
